@@ -973,6 +973,7 @@ dati_m_gompertz <- dati_m_gompertz |> mutate(
   D = D - 18,
   P = P - 25.5
 )
+
 Sys.time()
 modello_gompertz_ml <- nlme(
   model = OD ~ SSgompertz(tempo, Asym, b2, b3),
@@ -1003,15 +1004,18 @@ library(boot)
 bm_ids <- unique(dati_m_gompertz$id_biomassa)
 df_idbiomass <- data.frame(id_biomassa = bm_ids) 
 
-
-
 fun.stat <- function(data,i){
   
   sampled_biomass <- data[i]
   
+  # Genera il dataset di bootstrap combinando i dati campionati in un unico data frame
   dati_boot <- map_dfr(seq_along(sampled_biomass), ~ {
+    # rappresenta l'indice corrente del ciclo (es. 1, 2, 3...)
     dati_m_gompertz %>%
+      #  Isola i dati della biomassa estratta in questa specifica iterazione
       filter(id_biomassa == sampled_biomass[.x]) %>%
+      # Riassegna un ID univoco basato sulla posizione del clone ("cl_1", "cl_2", ecc.).
+      # Questo è fondamentale se lo stesso ID originale è stato estratto più volte.
       mutate(id_biomassa = paste0("cl_", .x))
   })
   

@@ -98,15 +98,14 @@ grafico_condizionate <- function(condizionante, f1, f2 = NULL) {
     ) + theme_minimal()
 }
 
-# png("Grafici/condizionata_D_I.png")
 grafico_condizionate("I", "D")
-# dev.off()
-# png("Grafici/condizionata_D_P.png")
+ggsave("Grafici/condizionata_D_I.png")
+
 grafico_condizionate("P", "D")
-# dev.off()
-# png("Grafici/condizionata_P_I.png")
+ggsave("Grafici/condizionata_D_P.png")
+
 grafico_condizionate("I", "P")
-# dev.off()
+ggsave("Grafici/condizionata_P_I.png")
 
 ## Marginale I
 marginale_I <- ggplot(dati, aes(x = tempo, y = OD, color = as.factor(I), group = id_biomassa)) +
