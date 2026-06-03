@@ -9,8 +9,8 @@ library(cmdstanr)
 setwd("C:/Users/Utente/OneDrive/Universita/Magistrale/2025-2026/Iterazione/Progetto/Analisi")
 
 load("dati_modificati.Rdata")
-load("Stan/fit_mcmc_base.Rdata")
-file_csv <- list.files(path="Stan/stan_output_base",
+load("Stan/fit_mcmc_advanced.Rdata")
+file_csv <- list.files(path="Stan/stan_output_advanced",
                        pattern="\\.csv",
                        full.names=T)
 fit_ricaricato <- as_cmdstan_fit(file_csv)
@@ -43,8 +43,8 @@ if(nrow(bad_rhat) > 0) print(bad_rhat |> select(variable, rhat, ess_bulk))
 # 2: ISPEZIONE VISIVA AVANZATA ----
 
 # Parametri strutturali principali da monitorare
-#target_params <- c("beta0_Asym", "beta0_b2", "beta0_b3", "sigma", "sigma_u_Asym", "sigma_u_b2", "sigma_u_b3", "rho")
-target_params <- c("beta0_Asym", "beta0_b2", "beta0_b3", "sigma", "sigma_u", "rho")
+target_params <- c("beta0_Asym", "beta0_b2", "beta0_b3", "sigma", "sigma_u_Asym", "sigma_u_b2", "sigma_u_b3", "rho")
+#target_params <- c("beta0_Asym", "beta0_b2", "beta0_b3", "sigma", "sigma_u", "rho")
 
 # 1. Rank Plots (Overlay di istogrammi dei ranghi per verificare l'uniformità)
 mcmc_rank_overlay(fit_ricaricato$draws(target_params)) +
@@ -99,6 +99,7 @@ mean(apply(Y_rep, 1, max) > max(Y_vec))
 ppc_stat(Y_vec, Y_rep, stat = "sd") + 
   theme_minimal() +
   labs(title = "Verifica sulla Deviazione Standard Globale")
+mean(apply(Y_rep, 1, sd) < sd(Y_vec))
 
 # 1. Recuperiamo i vettori dei tempi e dei dati reali
 tempi <- stan_data$t_idx # Vettore lungo 369 con i tempi reali (1:7)
@@ -174,26 +175,43 @@ stan_data$Y[stan_data$id_biomassa==45]
 
 # 5. Densità a Posteriori dei Parametri (con intervalli di credibilità) ----
 
-fit_ricaricato$metadata()$model_params |> head(20)
-target_params <- c("sigma", "sigma_u", "rho")
-#target_params <- c("sigma", "sigma_u_Asym", "sigma_u_b2", "sigma_u_b3", "rho")
+plot_c_density <- function(coef){
+  mcmc_areas(
+    fit_ricaricato$draws(coef),
+    prob = 0.5,       # Area interna (più scura): intervallo di credibilità al 50%
+    prob_outer = 0.9, # Area esterna (più chiara): intervallo di credibilità al 90%
+    point_est = "median" # Linea verticale sul valore mediano
+  ) +
+    geom_vline(aes(xintercept=0, col="red")) +
+    theme(legend.position = "none") +
+    theme_minimal() +
+    labs(
+      title = "Distribuzioni a Posteriori dei Parametri Chiave",
+      subtitle = "I punti indicano le mediane, le aree colorate gli intervalli di credibilità al 50% e 90%"
+    )
+}
 
-mcmc_areas(
-  fit_ricaricato$draws(target_params),
-  prob = 0.5,       # Area interna (più scura): intervallo di credibilità al 50%
-  prob_outer = 0.9, # Area esterna (più chiara): intervallo di credibilità al 90%
-  point_est = "median" # Linea verticale sul valore mediano
-) +
-  theme_minimal() +
-  labs(
-    title = "Distribuzioni a Posteriori dei Parametri Chiave",
-    subtitle = "I punti indicano le mediane, le aree colorate gli intervalli di credibilità al 50% e 90%"
-  )
+fit_ricaricato$metadata()$model_params |> head(20)
+
+#target_params <- c("sigma", "sigma_u", "rho")
+#plot_c_density(target_params)
+
+target_params <- c("sigma", "sigma_u_Asym", "sigma_u_b2", "sigma_u_b3", "rho")
+plot_c_density(target_params)
+
+target_params <- grep(fit_ricaricato$metadata()$model_params, pattern="beta[0-9]_Asym", value = T)
+plot_c_density(target_params)
+
+target_params <- grep(fit_ricaricato$metadata()$model_params, pattern="beta[0-9]_b2", value = T)
+plot_c_density(target_params)
+
+target_params <- grep(fit_ricaricato$metadata()$model_params, pattern="beta[0-9]_b3", value = T)
+plot_c_density(target_params)
 
 # Test: tempo 6 vs tempo 7 ----
 
-Y_new <- fit_ricaricato$draws("Y_new", format = "matrix")
-dim(Y_new)
+mu_new <- fit_ricaricato$draws("mu_new", format = "matrix")
+dim(mu_new)
 
 new_data_grid <- expand.grid(
   I_cov = c(-1, 0, 1),
@@ -201,15 +219,15 @@ new_data_grid <- expand.grid(
   P_cov = c(-1, 0, 1)
 ) %>% mutate(id_combinazione = row_number())
 
-matrice_differenze <- matrix(NA, nrow = nrow(Y_new), ncol = 27)
+matrice_differenze <- matrix(NA, nrow = nrow(mu_new), ncol = 27)
 colnames(matrice_differenze) <- paste0("Scenario_", 1:27)
 
 for (n in 1:27) {
-  col_t6 <- paste0("Y_new[", n, ",6]")
-  col_t7 <- paste0("Y_new[", n, ",7]")
+  col_t6 <- paste0("mu_new[", n, ",6]")
+  col_t7 <- paste0("mu_new[", n, ",7]")
   
   # Calcoliamo la differenza mantenendo il vettore di 8000 draw
-  matrice_differenze[, n] <- Y_new[, col_t7] - Y_new[, col_t6]
+  matrice_differenze[, n] <- mu_new[, col_t7] - mu_new[, col_t6]
 }
 
 df_distribuzioni <- as.data.frame(matrice_differenze) %>%
@@ -239,7 +257,7 @@ ggplot(df_plot, aes(x = Differenza_T7_T6, y = reorder(Scenario_Label, Differenza
   labs(
     title = "Distribuzione delle Differenze di Crescita (Tempo 7 - Tempo 6)",
     subtitle = "Analisi della forma della distribuzione su 8000 draw MCMC",
-    x = "Valore della Differenza (Y_new[T7] - Y_new[T6])",
+    x = "Valore della Differenza (mu_new[T7] - mu_new[T6])",
     y = "Scenari (Combinazioni Covariate)"
   ) +
   theme(panel.grid.minor = element_blank(), text = element_text(size = 12))
@@ -259,10 +277,10 @@ print(res, n=Inf)
 # Confronto al tempo 6 ----
 
 # matrice che contiene le previsioni al tempo 6
-Y_t6 <- matrix(NA, nrow = nrow(Y_new), ncol = 27)
-colnames(Y_t6) <- paste0("Scenario_", 1:27)
+mu_t6 <- matrix(NA, nrow = nrow(mu_new), ncol = 27)
+colnames(mu_t6) <- paste0("Scenario_", 1:27)
 for (n in 1:27) {
-  Y_t6[, n] <- Y_new[, paste0("Y_new[", n, ",6]")]
+  mu_t6[, n] <- mu_new[, paste0("mu_new[", n, ",6]")]
 }
 
 matrice_dominanza_t6 <- matrix(NA, nrow = 27, ncol = 27)
@@ -272,7 +290,7 @@ for (i in 1:27) {
       matrice_dominanza_t6[i, j] <- 0.5 # Contro se stesso è un pareggio teorico
     } else {
       # Quante volte l'MCMC dello scenario i supera lo scenario j al tempo 7?
-      matrice_dominanza_t6[i, j] <- mean(Y_t6[, i] > Y_t6[, j])
+      matrice_dominanza_t6[i, j] <- mean(mu_t6[, i] > mu_t6[, j])
     }
   }
 }
@@ -331,10 +349,10 @@ ggplot(df_heatmap, aes(x = Label_B, y = reorder(Label_A, Scenari_Battuti), fill 
 # Confronto al tempo 7 ----
 
 # matrice che contiene le previsioni al tempo 7
-Y_t7 <- matrix(NA, nrow = nrow(Y_new), ncol = 27)
-colnames(Y_t7) <- paste0("Scenario_", 1:27)
+mu_t7 <- matrix(NA, nrow = nrow(mu_new), ncol = 27)
+colnames(mu_t7) <- paste0("Scenario_", 1:27)
 for (n in 1:27) {
-  Y_t7[, n] <- Y_new[, paste0("Y_new[", n, ",7]")]
+  mu_t7[, n] <- mu_new[, paste0("mu_new[", n, ",7]")]
 }
 
 matrice_dominanza_t7 <- matrix(NA, nrow = 27, ncol = 27)
@@ -344,7 +362,7 @@ for (i in 1:27) {
       matrice_dominanza_t7[i, j] <- 0.5 # Contro se stesso è un pareggio teorico
     } else {
       # Quante volte l'MCMC dello scenario i supera lo scenario j al tempo 7?
-      matrice_dominanza_t7[i, j] <- mean(Y_t7[, i] > Y_t7[, j])
+      matrice_dominanza_t7[i, j] <- mean(mu_t7[, i] > mu_t7[, j])
     }
   }
 }
