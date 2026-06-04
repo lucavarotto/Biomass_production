@@ -3,14 +3,14 @@ rm(list=ls());gc();
 library(ggplot2)
 library(bayesplot)
 library(dplyr)
-library(ggridges) 
+library(ggridges)
 library(cmdstanr)
 
 setwd("C:/Users/Utente/OneDrive/Universita/Magistrale/2025-2026/Iterazione/Progetto/Analisi")
 
 load("dati_modificati.Rdata")
-load("Stan/fit_mcmc_advanced.Rdata")
-file_csv <- list.files(path="Stan/stan_output_advanced",
+load("Stan/fit_mcmc_hs.Rdata")
+file_csv <- list.files(path="Stan/stan_output_hs",
                        pattern="\\.csv",
                        full.names=T)
 fit_ricaricato <- as_cmdstan_fit(file_csv)
@@ -43,8 +43,8 @@ if(nrow(bad_rhat) > 0) print(bad_rhat |> select(variable, rhat, ess_bulk))
 # 2: ISPEZIONE VISIVA AVANZATA ----
 
 # Parametri strutturali principali da monitorare
-target_params <- c("beta0_Asym", "beta0_b2", "beta0_b3", "sigma", "sigma_u_Asym", "sigma_u_b2", "sigma_u_b3", "rho")
-#target_params <- c("beta0_Asym", "beta0_b2", "beta0_b3", "sigma", "sigma_u", "rho")
+
+target_params <- c(grep(fit_ricaricato$metadata()$model_params, pattern="sigma_t|sigma_u|beta0_", value = T))
 
 # 1. Rank Plots (Overlay di istogrammi dei ranghi per verificare l'uniformità)
 mcmc_rank_overlay(fit_ricaricato$draws(target_params)) +
@@ -59,7 +59,7 @@ mcmc_acf(fit_ricaricato$draws(target_params), lags = 20) +
 # 3. Analisi delle Divergenze (Se presenti, capiamo dove si concentrano)
 if (divergences > 0) {
   # Coppia critica tipica nei modelli misti: log(varianza effetto casuale) vs effetto casuale non centrato
-  mcmc_pairs(fit$draws(), pars = c("sigma_u", "beta0_Asym"), 
+  mcmc_pairs(fit$draws(), pars = target_params, 
              np = nuts_params(fit), max_treedepth = 12)
 }
 
@@ -150,6 +150,53 @@ ggplot() +
     y = "Deviazione Standard (Variabilità tra biomasse)"
   )
 
+# Confronto quantili ----
+
+tempi <- stan_data$t_idx
+tempi_unici <- sort(unique(tempi))
+
+# 1. Inizializzazione
+median_simulate <- matrix(NA, nrow = nrow(Y_rep), ncol = length(tempi_unici))
+colnames(median_simulate) <- paste0("Tempo_", tempi_unici)
+
+median_reali <- numeric(length(tempi_unici))
+
+# 2. Calcolo ciclico 
+for (i in seq_along(tempi_unici)) {
+  t <- tempi_unici[i]
+  colonne_del_tempo_t <- which(tempi == t)
+  
+  # Mediana dei dati reali al tempo t
+  median_reali[i] <- median(stan_data$Y[colonne_del_tempo_t])
+  
+  # Mediana delle repliche del modello al tempo t (per riga)
+  median_simulate[, i] <- apply(Y_rep[, colonne_del_tempo_t], 1, median)
+}
+
+# 3. Riorganizzazione per ggplot
+df_sim_long <- as.data.frame(median_simulate) |> 
+  tidyr::pivot_longer(cols = everything(), names_to = "Tempo", values_to = "Mediana_Simulata") |> 
+  dplyr::mutate(Tempo = as.numeric(gsub("Tempo_", "", Tempo)))
+
+df_real_long <- data.frame(
+  Tempo = tempi_unici,
+  Mediana_Reale = median_reali
+)
+
+# 4. Grafico di Posterior Predictive Check
+ggplot() +
+  geom_boxplot(data = df_sim_long, aes(x = factor(Tempo), y = Mediana_Simulata), 
+               fill = "lightgreen", alpha = 0.6, outlier.alpha = 0.1) +
+  geom_point(data = df_real_long, aes(x = factor(Tempo), y = Mediana_Reale), 
+             color = "darkred", size = 4, shape = 18) +
+  theme_minimal() +
+  labs(
+    title = "Posterior Predictive Check: Mediana lungo il Tempo",
+    subtitle = "I boxplot indicano la distribuzione delle mediane simulate. I rombi rossi indicano la mediana dei dati reali.",
+    x = "Tempo (Rilevazione da 1 a 7)",
+    y = "Mediana"
+  )
+
 # FASE 4: CRITICITÀ DEI DATI (LOOCV) ----
 
 # Calcolo LOO sfruttando l'oggetto di CmdStanR per maggiore stabilità
@@ -193,19 +240,21 @@ plot_c_density <- function(coef){
 
 fit_ricaricato$metadata()$model_params |> head(20)
 
-#target_params <- c("sigma", "sigma_u", "rho")
-#plot_c_density(target_params)
-
-target_params <- c("sigma", "sigma_u_Asym", "sigma_u_b2", "sigma_u_b3", "rho")
+target_params <- c("sigma",
+                   grep(fit_ricaricato$metadata()$model_params, pattern="sigma_u", value = T),
+                   grep(fit_ricaricato$metadata()$model_params, pattern="sigma_t", value = T))
 plot_c_density(target_params)
 
-target_params <- grep(fit_ricaricato$metadata()$model_params, pattern="beta[0-9]_Asym", value = T)
+target_params <- c(grep(fit_ricaricato$metadata()$model_params, pattern="beta[0-9]_Asym", value = T),
+                   grep(fit_ricaricato$metadata()$model_params, pattern="beta_Asym\\[\\d\\]", value = T))
 plot_c_density(target_params)
 
-target_params <- grep(fit_ricaricato$metadata()$model_params, pattern="beta[0-9]_b2", value = T)
+target_params <- c(grep(fit_ricaricato$metadata()$model_params, pattern="beta[0-9]_b2", value = T),
+                   grep(fit_ricaricato$metadata()$model_params, pattern="beta_b2\\[\\d\\]", value = T))
 plot_c_density(target_params)
 
-target_params <- grep(fit_ricaricato$metadata()$model_params, pattern="beta[0-9]_b3", value = T)
+target_params <- c(grep(fit_ricaricato$metadata()$model_params, pattern="beta[0-9]_b3", value = T),
+                   grep(fit_ricaricato$metadata()$model_params, pattern="beta_b3\\[\\d\\]", value = T))
 plot_c_density(target_params)
 
 # Test: tempo 6 vs tempo 7 ----
@@ -417,3 +466,4 @@ ggplot(df_heatmap, aes(x = Label_B, y = reorder(Label_A, Scenari_Battuti), fill 
     panel.grid.major = element_blank(),
     plot.title = element_text(face = "bold", size = 14)
   )
+
