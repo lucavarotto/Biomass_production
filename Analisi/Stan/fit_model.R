@@ -118,4 +118,79 @@ modello_avanzato <- function(){
   save(fit, stan_data, file="Stan/fit_mcmc_advanced.Rdata")
 }
 
-modello_semplice(); modello_avanzato();
+modello_eteroschedastico <- function(){
+  mod <- cmdstan_model("Stan/model_heterosc_exp.stan")
+  
+  dir <- "Stan/stan_output_heterosc"
+  dir.create(dir, showWarnings = FALSE)
+  fit <- mod$sample(
+    # Passa la lista contenente i dati strutturati richiesti dal file .stan
+    data            = stan_data,
+    seed            = 123,
+    chains          = 6, # Numero di catene indipendenti da far girare
+    parallel_chains = 6, # Numero di core della CPU da allocare
+    output_dir      = dir, # I file si salvano qui dentro in tempo reale
+    iter_warmup     = 1000, # Iterazioni iniziali di "warm-up", che vengono scartate
+    iter_sampling   = 2000, # Iterazioni di campionamento effettive per catena
+    adapt_delta     = 0.95, # Target di accettazione
+    max_treedepth   = 12, # Profondità massima dell'albero NUTS
+    refresh         = 200 # Ogni quanto mostrare i log di avanzamento nella console di R
+  )
+  save(fit, stan_data, file="Stan/fit_mcmc_heterosc.Rdata")
+}
+
+modello_hs <- function(){
+  mod <- cmdstan_model("Stan/model_hs.stan")
+  
+  p0 <- 8 # Numero atteso di covariate rilevanti (es. I, D, P)
+  D_vars <- 21 # Numero totale di covariate
+  sigma_guess <- sd(Y_vec) # Una stima rudimentale di sigma basata sui dati
+  tau0_val <- (p0 / (D_vars - p0)) * (sigma_guess / sqrt(N))
+  
+  stan_data$slab_scale = 2.0  # Valore standard per la scala della t-Student
+  stan_data$slab_df    = 4.0  # Gradi di libertà
+  stan_data$tau0       = tau0_val
+  
+  dir <- "Stan/stan_output_hs"
+  dir.create(dir, showWarnings = FALSE)
+  fit <- mod$sample(
+    # Passa la lista contenente i dati strutturati richiesti dal file .stan
+    data            = stan_data,
+    seed            = 123,
+    chains          = 6, # Numero di catene indipendenti da far girare
+    parallel_chains = 6, # Numero di core della CPU da allocare
+    output_dir      = dir, # I file si salvano qui dentro in tempo reale
+    iter_warmup     = 1000, # Iterazioni iniziali di "warm-up", che vengono scartate
+    iter_sampling   = 2000, # Iterazioni di campionamento effettive per catena
+    adapt_delta     = 0.95, # Target di accettazione
+    max_treedepth   = 12, # Profondità massima dell'albero NUTS
+    refresh         = 200 # Ogni quanto mostrare i log di avanzamento nella console di R
+  )
+  save(fit, stan_data, file="Stan/fit_mcmc_hs.Rdata")
+}
+
+modello_het_quad_RE <- function(){
+  mod <- cmdstan_model("Stan/model_het_quad_RE.stan")
+  
+  dir <- "Stan/stan_output_het_quad_RE"
+  dir.create(dir, showWarnings = FALSE)
+  fit <- mod$sample(
+    # Passa la lista contenente i dati strutturati richiesti dal file .stan
+    data            = stan_data,
+    seed            = 123,
+    chains          = 6, # Numero di catene indipendenti da far girare
+    parallel_chains = 6, # Numero di core della CPU da allocare
+    output_dir      = dir, # I file si salvano qui dentro in tempo reale
+    iter_warmup     = 1000, # Iterazioni iniziali di "warm-up", che vengono scartate
+    iter_sampling   = 2000, # Iterazioni di campionamento effettive per catena
+    adapt_delta     = 0.95, # Target di accettazione
+    max_treedepth   = 12, # Profondità massima dell'albero NUTS
+    refresh         = 200 # Ogni quanto mostrare i log di avanzamento nella console di R
+  )
+  save(fit, stan_data, file="Stan/fit_mcmc_het_quad_RE.Rdata")
+}
+
+#modello_semplice();
+#modello_avanzato();
+#modello_eteroschedastico();modello_hs();
+modello_het_quad_RE();

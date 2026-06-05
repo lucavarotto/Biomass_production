@@ -1,3 +1,5 @@
+rm(list=ls());gc();
+
 library(ggplot2)
 library(gridExtra)
 
@@ -8,8 +10,8 @@ PALETTE <- "plasma"
 DPI     <- 300
 
 # Cartella di destinazione dei grafici (percorso assoluto)
-OUT_DIR <- "C:/Users/Antonio/Desktop/UNI/MAGISTRALE/SECONDO ANNO/2_SEMESTRE/ITERAZIONE/progetto/BiomassProduction/Grafici/"
-
+#OUT_DIR <- "C:/Users/Antonio/Desktop/UNI/MAGISTRALE/SECONDO ANNO/2_SEMESTRE/ITERAZIONE/progetto/BiomassProduction/Grafici/"
+OUT_DIR <- "C:/Users/Utente/OneDrive/Universita/Magistrale/2025-2026/Iterazione/Progetto/Analisi/Grafici"
 dati$tempo <- dati$tempo + 1
 
 # Tutte le curve --------------------------------------------------------------
@@ -266,3 +268,82 @@ ggsave(
   plot  = arrangeGrob(diff, rapp, ncol = 2),
   width = 12, height = 5, dpi = DPI
 )
+
+# Grafico relazione media-varianza ----
+
+library(dplyr)
+# 1. Calcolo di media e varianza di OD per ogni punto temporale
+df_summary <- dati |>
+  group_by(tempo) |>
+  summarise(
+    media_OD = mean(OD, na.rm = TRUE),
+    varianza_OD = var(OD, na.rm = TRUE)
+  )
+
+ggplot(df_summary, aes(x = tempo, y = varianza_OD)) +
+  geom_point(size = 3, color = "#2c3e50", alpha = 0.7) +
+  geom_smooth(
+    method = "lm", 
+    formula = y ~ splines::bs(x, df = 3), 
+    color = "#e74c3c", 
+    se = FALSE, 
+    size = 1.2
+  ) +
+  labs(
+    title = "Relazione Tempo-Varianza",
+    x = "Media di OD",
+    y = "Varianza di OD"
+  ) +
+  theme_minimal(base_size = 14)
+
+ggplot(df_summary, aes(x = media_OD, y = varianza_OD)) +
+  geom_point(size = 3, color = "#2c3e50", alpha = 0.7) +
+  # Spline cubica di regressione (regolata tramite i gradi di libertà 'df')
+  geom_smooth(
+    method = "lm", 
+    formula = y ~ splines::bs(x, df = 3), 
+    color = "#e74c3c", 
+    se = FALSE, 
+    size = 1.2
+  ) +
+  labs(
+    title = "Relazione Media-Varianza",
+    x = "Media di OD",
+    y = "Varianza di OD"
+  ) +
+  theme_minimal(base_size = 14)
+
+fit <- lm(varianza_OD ~ media_OD + I(media_OD^2) - 1,
+          data=df_summary)
+fit
+cbind(df_summary[,2]*coef(fit)[1] + (df_summary[,2]^2)*coef(fit)[2],
+      df_summary[,3])
+
+ggplot(df_summary, aes(x = media_OD, y = varianza_OD)) +
+  geom_point(size = 3, color = "#0d0887", alpha = 0.7) + # Blu scuro plasma
+  
+  # 1. Spline Cubica (Giallo plasma)
+  geom_smooth(
+    method = "lm", 
+    formula = y ~ splines::bs(x, df = 3), 
+    color = "#f0f921", 
+    se = FALSE, 
+    linewidth = 1.2
+  ) +
+  
+  # 2. Modello Mu + Beta*Mu^2 (Arancione plasma)
+  geom_smooth(
+    method = "lm", 
+    formula = y ~ x + I(x^2) -1, 
+    color = "#f89540", 
+    se = FALSE, 
+    linewidth = 1.2,
+    linetype = "dashed" # Distingue visivamente i due modelli
+  ) +
+  labs(
+    title = "Relazione Media-Varianza",
+    subtitle = "Giallo: Spline | Arancione tratteggiato: Modello mu + beta*mu^2",
+    x = "Media di OD",
+    y = "Varianza di OD"
+  ) +
+  theme_minimal(base_size = 14)

@@ -9,8 +9,8 @@ library(cmdstanr)
 setwd("C:/Users/Utente/OneDrive/Universita/Magistrale/2025-2026/Iterazione/Progetto/Analisi")
 
 load("dati_modificati.Rdata")
-load("Stan/fit_mcmc_hs.Rdata")
-file_csv <- list.files(path="Stan/stan_output_hs",
+load("Stan/fit_mcmc_het_quad_RE.Rdata")
+file_csv <- list.files(path="Stan/stan_output_het_quad_RE",
                        pattern="\\.csv",
                        full.names=T)
 fit_ricaricato <- as_cmdstan_fit(file_csv)
@@ -44,7 +44,7 @@ if(nrow(bad_rhat) > 0) print(bad_rhat |> select(variable, rhat, ess_bulk))
 
 # Parametri strutturali principali da monitorare
 
-target_params <- c(grep(fit_ricaricato$metadata()$model_params, pattern="sigma_t|sigma_u|beta0_", value = T))
+target_params <- c(grep(fit_ricaricato$metadata()$model_params, pattern="sigma_t|sigma_u|beta0_|sigma2_u|phi[0-9]", value = T))
 
 # 1. Rank Plots (Overlay di istogrammi dei ranghi per verificare l'uniformità)
 mcmc_rank_overlay(fit_ricaricato$draws(target_params)) +
@@ -220,6 +220,142 @@ if(nrow(problematic_obs) > 0) {
 
 stan_data$Y[stan_data$id_biomassa==45]
 
+# FASE 4b: CONFRONTO MODELLI E ALTRE METRICHE AVANZATE ----
+
+cat("\n--- CALCOLO WAIC ---\n")
+# Estrazione della matrice di log-verosimiglianza necessaria per il calcolo
+log_lik_matrix <- fit_ricaricato$draws("log_lik", format = "matrix")
+
+# Calcolo del WAIC
+waic_obj <- loo::waic(log_lik_matrix)
+print(waic_obj)
+# Nota critica: se compare di nuovo l'avviso p_waic > 0.4, ignora il valore 
+# del WAIC qui sopra e affidati unicamente ai risultati del LOO.
+
+cat("\n--- CONFRONTO TRA MODELLI (LOO-CV) ---\n")
+# Questo è il metodo standard (gold-standard). Richiede l'oggetto loo di un 
+# SECONDO modello (es. un modello base senza alcune covariate) per funzionare.
+# Sostituisci 'loo_modello_base' con l'oggetto loo del tuo modello ridotto.
+
+# confronto_loo <- loo::loo_compare(loo_modello_base, loo_obj)
+# print(confronto_loo)
+# Regola empirica: se elpd_diff è maggiore di (2 * se_diff), il modello in 
+# prima riga sta offrendo un miglioramento predittivo statisticamente significativo.
+
+cat("\n--- PESI DEI MODELLI (STACKING) ---\n")
+# Se sei indeciso tra due modelli, lo stacking ti dice come "mischiare" le loro previsioni.
+# liste_modelli <- list(Base = loo_modello_base, Completo = loo_obj)
+# pesi <- loo::loo_model_weights(liste_modelli, method = "stacking")
+# print(pesi)
+
+cat("\n--- BAYESIAN R-SQUARED (Gelman et al. 2019) ---\n")
+# A differenza dell'R2 frequentista, questo incorpora l'incertezza a posteriori.
+# Calcolo la varianza delle previsioni
+var_pred <- apply(Y_rep, 1, var)
+
+# Calcolo la varianza dei residui (usando sweep per sottrarre Y_vec a ogni riga di Y_rep)
+var_res <- apply(sweep(Y_rep, 2, Y_vec, "-"), 1, var)
+
+# R2 = Varianza Spiegata / (Varianza Spiegata + Varianza Residua)
+bayes_R2 <- var_pred / (var_pred + var_res)
+
+cat("Distribuzione del Bayesian R-squared (Mediana e 95% CrI):\n")
+print(quantile(bayes_R2, probs = c(0.025, 0.5, 0.975)))
+
+# 4c: CONFRONTO CURVE STIMATE vs CURVE REALI (SPAGHETTI PLOT) ----
+
+# Obiettivo: sovrapporre, per ognuno dei 53 soggetti, la curva di crescita
+# stimata (mediana posteriore di Y_rep) alla curva osservata (Y reale),
+# colorando entrambe in base alla condizione sperimentale (I, D, P).
+
+# Scelte tecniche:
+#  - La curva stimata per il soggetto s è la mediana colonnare di Y_rep sulle
+#    colonne corrispondenti a quel soggetto: cattura il centro della predittiva
+#    posteriore senza collassare l'incertezza in un unico numero globale.
+#  - Le curve reali sono tracciate con linea tratteggiata per distinguerle
+#    visivamente dalle stimate (linea continua), senza dover ricorrere a un
+#    secondo pannello.
+# -----------------------------------------------------------------------
+
+condizione_per_soggetto <- data.frame(
+  id_biomassa = 1:stan_data$S,
+  I_cov       = stan_data$I_cov,
+  D_cov       = stan_data$D_cov,
+  P_cov       = stan_data$P_cov
+) |>
+  dplyr::mutate(
+    condizione = paste0("I:", I_cov, " D:", D_cov, " P:", P_cov)
+  )
+
+# --- 2. Mediana posteriore di Y_rep per ogni osservazione (punto) ---
+# Y_rep ha dimensioni [n_draws x N_obs]. apply(..., 2, median) dà un vettore
+# di lunghezza N_obs con la mediana marginale per ciascun punto osservato.
+Y_rep_mediana <- apply(Y_rep, 2, median)
+
+# --- 3. Costruisci il dataframe lungo per i dati STIMATI ---
+df_stimato <- data.frame(
+  id_biomassa = stan_data$id_biomassa,  # soggetto (1..53)
+  Settimana   = stan_data$t_idx,        # time-point (1..7)
+  Y_stimato   = Y_rep_mediana           # mediana posteriore
+) |>
+  dplyr::left_join(condizione_per_soggetto, by = "id_biomassa")
+
+# --- 4. Costruisci il dataframe lungo per i dati REALI ---
+df_reale <- data.frame(
+  id_biomassa = stan_data$id_biomassa,
+  Settimana   = stan_data$t_idx,
+  Y_reale     = stan_data$Y
+) |>
+  dplyr::left_join(condizione_per_soggetto, by = "id_biomassa")
+str(df_reale)
+
+# --- 5. GRAFICO ---
+library(ggforce)
+# Due layer geom_line sovrapposti sullo stesso sistema di assi:
+#   - linea tratteggiata (lty=2): curva reale osservata
+#   - linea continua (lty=1): curva stimata (mediana posteriore)
+# Il parametro `group` deve identificare univocamente ogni soggetto in ogni
+# layer per evitare che ggplot connetta soggetti diversi tra loro.
+# alpha basso (0.55) evita overplotting pur mantenendo leggibilità individuale.
+ggplot() +
+  # Curve reali: ora molto più marcate grazie a "longdash" e al grigio scuro
+  geom_line(
+    data = df_reale,
+    aes(x = Settimana, y = Y_reale, group = id_biomassa),
+    color = "#A50044", linetype = "longdash", linewidth = 1, alpha = 0.9
+  ) +
+  # Punti sui dati reali: più grandi e scuri per definire i nodi della traiettoria
+  geom_point(
+    data = df_reale,
+    aes(x = Settimana, y = Y_reale, group = id_biomassa),
+    color = "#A50044", size = 1.2, alpha = 0.9
+  ) +
+  # Curve stimate: mantengono l'evidenza ma non coprono del tutto il dato reale
+  geom_line(
+    data = df_stimato,
+    aes(x = Settimana, y = Y_stimato, group = id_biomassa),
+    color = "#1071E5", linetype = "solid", linewidth = 0.85, alpha = 0.85
+  ) +
+  # Pannelli configurati 3x2 come da tua richiesta
+  facet_wrap_paginate(~ condizione, ncol = 1, nrow = 2, page = 5) +  
+  scale_x_continuous(breaks = 1:7, labels = paste0("T", 1:7)) +
+  theme_minimal(base_size = 11) +
+  labs(
+    title    = "Verifica Fit: Curve Stimate vs Osservate per Condizione",
+    subtitle = "Linea blu continua: mediana posteriore | Linea scura a tratti lunghi + punti: dato reale osservato",
+    x        = "Settimana (time-point)",
+    y        = "Biomassa (OD)"
+  ) +
+  theme(
+    legend.position   = "none",
+    strip.text        = element_text(face = "bold", size = 9.5), 
+    panel.grid.minor  = element_blank(),
+    panel.grid.major  = element_line(color = "grey92"), # Griglia principale più chiara per non interferire con le linee tratteggiate
+    panel.spacing.x   = unit(0.5, "cm"), 
+    panel.spacing.y   = unit(0.5, "cm"), 
+    plot.subtitle     = element_text(size = 9, color = "grey30")
+  )
+
 # 5. Densità a Posteriori dei Parametri (con intervalli di credibilità) ----
 
 plot_c_density <- function(coef){
@@ -240,9 +376,11 @@ plot_c_density <- function(coef){
 
 fit_ricaricato$metadata()$model_params |> head(20)
 
-target_params <- c("sigma",
+target_params <- c(grep(fit_ricaricato$metadata()$model_params, pattern="^sigma$", value = T),
                    grep(fit_ricaricato$metadata()$model_params, pattern="sigma_u", value = T),
-                   grep(fit_ricaricato$metadata()$model_params, pattern="sigma_t", value = T))
+                   grep(fit_ricaricato$metadata()$model_params, pattern="sigma_t", value = T),
+                   grep(fit_ricaricato$metadata()$model_params, pattern="sigma2_u", value = T),
+                   grep(fit_ricaricato$metadata()$model_params, pattern="phi[0-9]", value = T))
 plot_c_density(target_params)
 
 target_params <- c(grep(fit_ricaricato$metadata()$model_params, pattern="beta[0-9]_Asym", value = T),
