@@ -11,7 +11,7 @@ DPI     <- 300
 
 # Cartella di destinazione dei grafici (percorso assoluto)
 #OUT_DIR <- "C:/Users/Antonio/Desktop/UNI/MAGISTRALE/SECONDO ANNO/2_SEMESTRE/ITERAZIONE/progetto/BiomassProduction/Grafici/"
-OUT_DIR <- "C:/Users/Utente/OneDrive/Universita/Magistrale/2025-2026/Iterazione/Progetto/Analisi/Grafici"
+OUT_DIR <- "C:/Users/Utente/OneDrive/Universita/Magistrale/2025-2026/Iterazione/Progetto/Grafici"
 dati$tempo <- dati$tempo + 1
 
 # Tutte le curve --------------------------------------------------------------
@@ -269,7 +269,8 @@ ggsave(
   width = 12, height = 5, dpi = DPI
 )
 
-# Grafico relazione media-varianza ----
+
+# Relazione media-varianza ----
 
 library(dplyr)
 # 1. Calcolo di media e varianza di OD per ogni punto temporale
@@ -280,38 +281,42 @@ df_summary <- dati |>
     varianza_OD = var(OD, na.rm = TRUE)
   )
 
-ggplot(df_summary, aes(x = tempo, y = varianza_OD)) +
-  geom_point(size = 3, color = "#2c3e50", alpha = 0.7) +
-  geom_smooth(
-    method = "lm", 
-    formula = y ~ splines::bs(x, df = 3), 
-    color = "#e74c3c", 
-    se = FALSE, 
-    size = 1.2
-  ) +
+t_var <- ggplot(df_summary, aes(x = tempo, y = varianza_OD)) +
+  # Punti con leggera trasparenza per gestire l'overplotting
+  geom_point(size = 2.5, color = "#2c3e50", alpha = 0.6) +
+  # Linea di riferimento di Poisson (Varianza = Media) per vedere l'iperdispersione
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "gray50", linewidth = 0.8) +
+  geom_smooth(method = "loess", color = "#e74c3c", linewidth = 1.2, se = FALSE, span=1, fill = "#e74c3c")+
   labs(
-    title = "Relazione Tempo-Varianza",
-    x = "Media di OD",
+    x = "Tempo",
     y = "Varianza di OD"
   ) +
-  theme_minimal(base_size = 14)
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
 
-ggplot(df_summary, aes(x = media_OD, y = varianza_OD)) +
-  geom_point(size = 3, color = "#2c3e50", alpha = 0.7) +
-  # Spline cubica di regressione (regolata tramite i gradi di libertà 'df')
-  geom_smooth(
-    method = "lm", 
-    formula = y ~ splines::bs(x, df = 3), 
-    color = "#e74c3c", 
-    se = FALSE, 
-    size = 1.2
-  ) +
+m_var <- ggplot(df_summary, aes(x = media_OD, y = varianza_OD)) +
+  # Punti con leggera trasparenza per gestire l'overplotting
+  geom_point(size = 2.5, color = "#2c3e50", alpha = 0.6) +
+  # Linea di riferimento di Poisson (Varianza = Media) per vedere l'iperdispersione
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "gray50", linewidth = 0.8) +
+  geom_smooth(method = "loess", color = "#e74c3c", linewidth = 1.2, se = FALSE, span=1, fill = "#e74c3c")+
   labs(
-    title = "Relazione Media-Varianza",
     x = "Media di OD",
     y = "Varianza di OD"
   ) +
-  theme_minimal(base_size = 14)
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+ggsave(
+  file.path(OUT_DIR, "relazione_m_var.png"),
+  plot  = arrangeGrob(t_var, m_var, ncol = 2),
+  width = 12, height = 5, dpi = DPI
+)
 
 fit <- lm(varianza_OD ~ media_OD + I(media_OD^2) - 1,
           data=df_summary)
