@@ -275,7 +275,6 @@ print(quantile(bayes_R2, probs = c(0.025, 0.5, 0.975)))
 #  - Le curve reali sono tracciate con linea tratteggiata per distinguerle
 #    visivamente dalle stimate (linea continua), senza dover ricorrere a un
 #    secondo pannello.
-# -----------------------------------------------------------------------
 
 condizione_per_soggetto <- data.frame(
   id_biomassa = 1:stan_data$S,
@@ -287,12 +286,7 @@ condizione_per_soggetto <- data.frame(
     condizione = paste0("I:", I_cov, " D:", D_cov, " P:", P_cov)
   )
 
-# --- 2. Mediana posteriore di Y_rep per ogni osservazione (punto) ---
-# Y_rep ha dimensioni [n_draws x N_obs]. apply(..., 2, median) dà un vettore
-# di lunghezza N_obs con la mediana marginale per ciascun punto osservato.
 Y_rep_mediana <- apply(Y_rep, 2, median)
-
-# --- 3. Costruisci il dataframe lungo per i dati STIMATI ---
 df_stimato <- data.frame(
   id_biomassa = stan_data$id_biomassa,  # soggetto (1..53)
   Settimana   = stan_data$t_idx,        # time-point (1..7)
@@ -300,57 +294,64 @@ df_stimato <- data.frame(
 ) |>
   dplyr::left_join(condizione_per_soggetto, by = "id_biomassa")
 
-# --- 4. Costruisci il dataframe lungo per i dati REALI ---
 df_reale <- data.frame(
   id_biomassa = stan_data$id_biomassa,
   Settimana   = stan_data$t_idx,
   Y_reale     = stan_data$Y
 ) |>
   dplyr::left_join(condizione_per_soggetto, by = "id_biomassa")
-str(df_reale)
 
-# --- 5. GRAFICO ---
-library(ggforce)
-# Due layer geom_line sovrapposti sullo stesso sistema di assi:
-#   - linea tratteggiata (lty=2): curva reale osservata
-#   - linea continua (lty=1): curva stimata (mediana posteriore)
-# Il parametro `group` deve identificare univocamente ogni soggetto in ogni
-# layer per evitare che ggplot connetta soggetti diversi tra loro.
-# alpha basso (0.55) evita overplotting pur mantenendo leggibilità individuale.
+df_reale <- df_reale %>%
+  group_by(condizione) %>%
+  mutate(id_locale = as.factor(dense_rank(id_biomassa))) %>%
+  ungroup()
+
+# 2. Creiamo un dizionario di corrispondenza per non fare casini tra reale e stimato
+mappa_indici <- df_reale %>%
+  distinct(condizione, id_biomassa, id_locale)
+
+# 3. Agganciamo lo stesso indice locale a df_stimato
+df_stimato <- df_stimato %>%
+  left_join(mappa_indici, by = c("condizione", "id_biomassa"))
+
+# --- PHASE 2: GRAFICO ---
 ggplot() +
-  # Curve reali: ora molto più marcate grazie a "longdash" e al grigio scuro
+  # Curve reali (Tratteggiate, colorate per indice locale)
   geom_line(
     data = df_reale,
-    aes(x = Settimana, y = Y_reale, group = id_biomassa),
-    color = "#A50044", linetype = "longdash", linewidth = 1, alpha = 0.9
+    aes(x = Settimana, y = Y_reale, group = id_biomassa, color = id_locale),
+    linetype = "longdash", linewidth = 0.65, alpha = 0.85
   ) +
-  # Punti sui dati reali: più grandi e scuri per definire i nodi della traiettoria
+  # Punti sui dati reali
   geom_point(
     data = df_reale,
-    aes(x = Settimana, y = Y_reale, group = id_biomassa),
-    color = "#A50044", size = 1.2, alpha = 0.9
+    aes(x = Settimana, y = Y_reale, group = id_biomassa, color = id_locale),
+    size = 1.3, alpha = 0.85
   ) +
-  # Curve stimate: mantengono l'evidenza ma non coprono del tutto il dato reale
+  # Curve stimate (Continue, stesso colore della rispettiva retta reale)
   geom_line(
     data = df_stimato,
-    aes(x = Settimana, y = Y_stimato, group = id_biomassa),
-    color = "#1071E5", linetype = "solid", linewidth = 0.85, alpha = 0.85
+    aes(x = Settimana, y = Y_stimato, group = id_biomassa, color = id_locale),
+    linetype = "solid", linewidth = 0.9, alpha = 0.9
   ) +
-  # Pannelli configurati 3x2 come da tua richiesta
-  facet_wrap_paginate(~ condizione, ncol = 1, nrow = 2, page = 5) +  
+  # Pannelli paginati 3x2
+  facet_wrap_paginate(~ condizione, ncol = 3, nrow = 2, page = 2, scales = "free_y") +  
+  
   scale_x_continuous(breaks = 1:7, labels = paste0("T", 1:7)) +
+  # Palette discreta e pulita (max 8 colori, addio arcobaleno)
+  scale_color_brewer(palette = "Dark2") + 
   theme_minimal(base_size = 11) +
   labs(
-    title    = "Verifica Fit: Curve Stimate vs Osservate per Condizione",
-    subtitle = "Linea blu continua: mediana posteriore | Linea scura a tratti lunghi + punti: dato reale osservato",
+    title    = "Verifica Fit: Effetti Casuali per Soggetto (Colori Riciclati per Pannello)",
+    subtitle = "Stesso colore = medesimo indice di soggetto nel pannello | Continua: stimato | Tratti + punti: reale",
     x        = "Settimana (time-point)",
     y        = "Biomassa (OD)"
   ) +
   theme(
-    legend.position   = "none",
+    legend.position   = "none", # La legenda globale non serve più, i colori si leggono localmente
     strip.text        = element_text(face = "bold", size = 9.5), 
     panel.grid.minor  = element_blank(),
-    panel.grid.major  = element_line(color = "grey92"), # Griglia principale più chiara per non interferire con le linee tratteggiate
+    panel.grid.major  = element_line(color = "grey94"), 
     panel.spacing.x   = unit(0.5, "cm"), 
     panel.spacing.y   = unit(0.5, "cm"), 
     plot.subtitle     = element_text(size = 9, color = "grey30")
