@@ -230,7 +230,7 @@ ggsave(
 # prima di eseguire questo blocco (cfr. script di preparazione dati).
 
 diff <- ggplot(dati_incrementi,
-               aes(x = tempo, y = incremento_OD, color = consumo, fill = consumo)) +
+               aes(x = tempo, y = incremento_OD, color = condizione_sperimentale, fill = condizione_sperimentale)) +
   geom_line(aes(group = id_biomassa), alpha = 0.15, na.rm = TRUE) +
   stat_summary(fun.data = mean_se, geom = "ribbon", alpha = 0.2, color = NA, na.rm = TRUE) +
   stat_summary(fun = mean, geom = "line", linewidth = 1.2, na.rm = TRUE) +
@@ -240,14 +240,14 @@ diff <- ggplot(dati_incrementi,
   labs(
     x     = "Tempo (settimane)",
     y     = bquote(Delta ~ "OD"),
-    color = bquote("Consumo (I" %*% "D)"),
-    fill  = bquote("Consumo (I" %*% "D)")
+    color = "Condizione sperimentale",
+    fill  = "Condizione sperimentale"
   ) +
   theme_minimal() +
   theme(legend.position = "none")
 
 rapp <- ggplot(dati_incrementi_rapporti,
-               aes(x = tempo, y = incremento_OD, color = consumo, fill = consumo)) +
+               aes(x = tempo, y = incremento_OD, color = condizione_sperimentale, fill = condizione_sperimentale)) +
   geom_line(aes(group = id_biomassa), alpha = 0.15, na.rm = TRUE) +
   stat_summary(fun.data = mean_se, geom = "ribbon", alpha = 0.2, color = NA, na.rm = TRUE) +
   stat_summary(fun = mean, geom = "line", linewidth = 1.2, na.rm = TRUE) +
@@ -258,8 +258,8 @@ rapp <- ggplot(dati_incrementi_rapporti,
   labs(
     x     = "Tempo (settimane)",
     y     = bquote(frac(OD[t], OD[t - 1])),
-    color = bquote("Consumo (I" %*% "D)"),
-    fill  = bquote("Consumo (I" %*% "D)")
+    color = "Condizione sperimentale",
+    fill  = "Condizione sperimentale"
   ) +
   theme_minimal()
 
