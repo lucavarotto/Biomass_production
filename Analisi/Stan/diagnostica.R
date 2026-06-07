@@ -9,8 +9,8 @@ library(cmdstanr)
 setwd("C:/Users/Utente/OneDrive/Universita/Magistrale/2025-2026/Iterazione/Progetto/Analisi")
 
 load("dati_modificati.Rdata")
-load("Stan/fit_mcmc_het_quad_RE.Rdata")
-file_csv <- list.files(path="Stan/stan_output_het_quad_RE",
+load("Stan/fit_mcmc_base.Rdata")
+file_csv <- list.files(path="Stan/stan_output_base",
                        pattern="\\.csv",
                        full.names=T)
 fit_ricaricato <- as_cmdstan_fit(file_csv)
@@ -59,7 +59,7 @@ mcmc_acf(fit_ricaricato$draws(target_params), lags = 20) +
 # 3. Analisi delle Divergenze (Se presenti, capiamo dove si concentrano)
 if (divergences > 0) {
   # Coppia critica tipica nei modelli misti: log(varianza effetto casuale) vs effetto casuale non centrato
-  mcmc_pairs(fit$draws(), pars = target_params, 
+  mcmc_pairs(fit$draws(), pars = target_params,
              np = nuts_params(fit), max_treedepth = 12)
 }
 
@@ -73,7 +73,7 @@ dim(Y_rep)
 # Prepariamo un dataframe di supporto con la struttura del design sperimentale
 # Assicurati che l'ordine di stan_data$time e stan_data$biomass corrisponda a Y_vec
 df_check <- dati |> na.omit() |>
-  dplyr::select(OD, tempo, id_biomassa) |> 
+  dplyr::select(OD, tempo, id_biomassa) |>
   dplyr::rename(Y_vec=OD,
          Settimana=tempo)
 Y_vec <- dati |> na.omit() |> dplyr::pull(OD)
@@ -89,14 +89,14 @@ ppc_violin_grouped(Y_vec, Y_rep, group = df_check$Settimana, probs = c(0.1, 0.5,
 
 # VERIFICA SUI MASSIMI LOCALI
 # Il modello riesce a intercettare il picco di crescita massimo delle biomasse?
-ppc_stat(Y_vec, Y_rep, stat = "max") + 
+ppc_stat(Y_vec, Y_rep, stat = "max") +
   theme_minimal() +
   labs(title = "Verifica sul Valore Massimo (Picco di Biomassa)")
 mean(apply(Y_rep, 1, max) > max(Y_vec))
 
 # Confronto SE ----
 
-ppc_stat(Y_vec, Y_rep, stat = "sd") + 
+ppc_stat(Y_vec, Y_rep, stat = "sd") +
   theme_minimal() +
   labs(title = "Verifica sulla Deviazione Standard Globale")
 mean(apply(Y_rep, 1, sd) < sd(Y_vec))
@@ -116,17 +116,17 @@ sd_reali <- numeric(length(tempi_unici))
 for (i in seq_along(tempi_unici)) {
   t <- tempi_unici[i]
   colonne_del_tempo_t <- which(tempi == t) # Trova quali colonne di Y_rep sono al tempo t
-  
+
   # SD dei dati reali al tempo t
   sd_reali[i] <- sd(stan_data$Y[colonne_del_tempo_t])
-  
+
   # SD delle 8000 repliche del modello al tempo t
   sd_simulate[, i] <- apply(Y_rep[, colonne_del_tempo_t], 1, sd)
 }
 
 # 4. Riorganizzazione dei dati per ggplot
-df_sim_long <- as.data.frame(sd_simulate) |> 
-  tidyr::pivot_longer(cols = everything(), names_to = "Tempo", values_to = "SD_Simulata") |> 
+df_sim_long <- as.data.frame(sd_simulate) |>
+  tidyr::pivot_longer(cols = everything(), names_to = "Tempo", values_to = "SD_Simulata") |>
   dplyr::mutate(Tempo = as.numeric(gsub("Tempo_", "", Tempo)))
 
 df_real_long <- data.frame(
@@ -137,10 +137,10 @@ df_real_long <- data.frame(
 # 5. GRAFICO DI CONFRONTO
 ggplot() +
   # Distribuzione delle SD simulate dal modello (Boxplot azzurri)
-  geom_boxplot(data = df_sim_long, aes(x = factor(Tempo), y = SD_Simulata), 
+  geom_boxplot(data = df_sim_long, aes(x = factor(Tempo), y = SD_Simulata),
                fill = "skyblue", alpha = 0.6, outlier.alpha = 0.1) +
   # Valore reale della SD nei dati (Rombi rossi)
-  geom_point(data = df_real_long, aes(x = factor(Tempo), y = SD_Reale), 
+  geom_point(data = df_real_long, aes(x = factor(Tempo), y = SD_Reale),
              color = "red", size = 4, shape = 18) +
   theme_minimal() +
   labs(
@@ -161,21 +161,21 @@ colnames(median_simulate) <- paste0("Tempo_", tempi_unici)
 
 median_reali <- numeric(length(tempi_unici))
 
-# 2. Calcolo ciclico 
+# 2. Calcolo ciclico
 for (i in seq_along(tempi_unici)) {
   t <- tempi_unici[i]
   colonne_del_tempo_t <- which(tempi == t)
-  
+
   # Mediana dei dati reali al tempo t
   median_reali[i] <- median(stan_data$Y[colonne_del_tempo_t])
-  
+
   # Mediana delle repliche del modello al tempo t (per riga)
   median_simulate[, i] <- apply(Y_rep[, colonne_del_tempo_t], 1, median)
 }
 
 # 3. Riorganizzazione per ggplot
-df_sim_long <- as.data.frame(median_simulate) |> 
-  tidyr::pivot_longer(cols = everything(), names_to = "Tempo", values_to = "Mediana_Simulata") |> 
+df_sim_long <- as.data.frame(median_simulate) |>
+  tidyr::pivot_longer(cols = everything(), names_to = "Tempo", values_to = "Mediana_Simulata") |>
   dplyr::mutate(Tempo = as.numeric(gsub("Tempo_", "", Tempo)))
 
 df_real_long <- data.frame(
@@ -185,9 +185,9 @@ df_real_long <- data.frame(
 
 # 4. Grafico di Posterior Predictive Check
 ggplot() +
-  geom_boxplot(data = df_sim_long, aes(x = factor(Tempo), y = Mediana_Simulata), 
+  geom_boxplot(data = df_sim_long, aes(x = factor(Tempo), y = Mediana_Simulata),
                fill = "lightgreen", alpha = 0.6, outlier.alpha = 0.1) +
-  geom_point(data = df_real_long, aes(x = factor(Tempo), y = Mediana_Reale), 
+  geom_point(data = df_real_long, aes(x = factor(Tempo), y = Mediana_Reale),
              color = "darkred", size = 4, shape = 18) +
   theme_minimal() +
   labs(
@@ -229,17 +229,17 @@ log_lik_matrix <- fit_ricaricato$draws("log_lik", format = "matrix")
 # Calcolo del WAIC
 waic_obj <- loo::waic(log_lik_matrix)
 print(waic_obj)
-# Nota critica: se compare di nuovo l'avviso p_waic > 0.4, ignora il valore 
+# Nota critica: se compare di nuovo l'avviso p_waic > 0.4, ignora il valore
 # del WAIC qui sopra e affidati unicamente ai risultati del LOO.
 
 cat("\n--- CONFRONTO TRA MODELLI (LOO-CV) ---\n")
-# Questo è il metodo standard (gold-standard). Richiede l'oggetto loo di un 
+# Questo è il metodo standard (gold-standard). Richiede l'oggetto loo di un
 # SECONDO modello (es. un modello base senza alcune covariate) per funzionare.
 # Sostituisci 'loo_modello_base' con l'oggetto loo del tuo modello ridotto.
 
 # confronto_loo <- loo::loo_compare(loo_modello_base, loo_obj)
 # print(confronto_loo)
-# Regola empirica: se elpd_diff è maggiore di (2 * se_diff), il modello in 
+# Regola empirica: se elpd_diff è maggiore di (2 * se_diff), il modello in
 # prima riga sta offrendo un miglioramento predittivo statisticamente significativo.
 
 cat("\n--- PESI DEI MODELLI (STACKING) ---\n")
@@ -335,11 +335,11 @@ ggplot() +
     linetype = "solid", linewidth = 0.9, alpha = 0.9
   ) +
   # Pannelli paginati 3x2
-  facet_wrap_paginate(~ condizione, ncol = 3, nrow = 2, page = 2, scales = "free_y") +  
-  
+  facet_wrap_paginate(~ condizione, ncol = 3, nrow = 2, page = 2, scales = "free_y") +
+
   scale_x_continuous(breaks = 1:7, labels = paste0("T", 1:7)) +
   # Palette discreta e pulita (max 8 colori, addio arcobaleno)
-  scale_color_brewer(palette = "Dark2") + 
+  scale_color_brewer(palette = "Dark2") +
   theme_minimal(base_size = 11) +
   labs(
     title    = "Verifica Fit: Effetti Casuali per Soggetto (Colori Riciclati per Pannello)",
@@ -349,11 +349,11 @@ ggplot() +
   ) +
   theme(
     legend.position   = "none", # La legenda globale non serve più, i colori si leggono localmente
-    strip.text        = element_text(face = "bold", size = 9.5), 
+    strip.text        = element_text(face = "bold", size = 9.5),
     panel.grid.minor  = element_blank(),
-    panel.grid.major  = element_line(color = "grey94"), 
-    panel.spacing.x   = unit(0.5, "cm"), 
-    panel.spacing.y   = unit(0.5, "cm"), 
+    panel.grid.major  = element_line(color = "grey94"),
+    panel.spacing.x   = unit(0.5, "cm"),
+    panel.spacing.y   = unit(0.5, "cm"),
     plot.subtitle     = element_text(size = 9, color = "grey30")
   )
 
@@ -374,6 +374,9 @@ plot_c_density <- function(coef){
       subtitle = "I punti indicano le mediane, le aree colorate gli intervalli di credibilità al 50% e 90%"
     )
 }
+
+plot_c_density(grep(fit_ricaricato$metadata()$model_params, pattern="z", value = T) |>
+                 head(5))
 
 fit_ricaricato$metadata()$model_params |> head(20)
 
@@ -413,15 +416,15 @@ colnames(matrice_differenze) <- paste0("Scenario_", 1:27)
 for (n in 1:27) {
   col_t6 <- paste0("mu_new[", n, ",6]")
   col_t7 <- paste0("mu_new[", n, ",7]")
-  
+
   # Calcoliamo la differenza mantenendo il vettore di 8000 draw
   matrice_differenze[, n] <- mu_new[, col_t7] - mu_new[, col_t6]
 }
 
 df_distribuzioni <- as.data.frame(matrice_differenze) %>%
-  mutate(id_draw_mcmc = row_number()) %>% 
-  tidyr::pivot_longer(cols = starts_with("Scenario_"), 
-                      names_to = "Scenario", 
+  mutate(id_draw_mcmc = row_number()) %>%
+  tidyr::pivot_longer(cols = starts_with("Scenario_"),
+                      names_to = "Scenario",
                       values_to = "Differenza_T7_T6") %>%
   mutate(id_combinazione = as.numeric(gsub("Scenario_", "", Scenario))) %>%
   inner_join(new_data_grid, by = "id_combinazione") %>%
@@ -435,7 +438,7 @@ df_plot <- df_distribuzioni %>%
 
 ggplot(df_plot, aes(x = Differenza_T7_T6, y = reorder(Scenario_Label, Differenza_T7_T6))) +
   # Disegna le densità colorandole in base al fatto che siano maggiori o minori di zero
-  stat_density_ridges(aes(fill = stat(x) > 0), geom = "density_ridges_gradient", 
+  stat_density_ridges(aes(fill = stat(x) > 0), geom = "density_ridges_gradient",
                       calc_ecdf = TRUE, alpha = 0.7, scale = 1.5) +
   # Linea verticale sullo zero: separa visivamente crescita da decrescita
   geom_vline(xintercept = 0, linetype = "dashed", color = "red", size = 0.8) +
@@ -451,14 +454,14 @@ ggplot(df_plot, aes(x = Differenza_T7_T6, y = reorder(Scenario_Label, Differenza
   theme(panel.grid.minor = element_blank(), text = element_text(size = 12))
 
 head(df_distribuzioni)
-res <- df_distribuzioni |>  
-  group_by(I_cov, D_cov, P_cov) |>  
+res <- df_distribuzioni |>
+  group_by(I_cov, D_cov, P_cov) |>
   summarise(
     Mediana_Diff = median(Differenza_T7_T6),
     Prob_Decrescita = (mean(Differenza_T7_T6 < 0)*100) |> round(2),
     Prob_Crescita = (mean(Differenza_T7_T6 > 0)*100) |> round(2),
     .groups = "drop"
-  ) |> 
+  ) |>
   arrange(Mediana_Diff)
 print(res, n=Inf)
 
@@ -518,7 +521,7 @@ df_heatmap <- df_heatmap %>%
 ggplot(df_heatmap, aes(x = Label_B, y = reorder(Label_A, Scenari_Battuti), fill = Prob_Vittoria)) +
   geom_tile(color = "white", size = 0.1) +
   # Scala divergente: viola/blu se perde (<0.5), bianca al pareggio (0.5), verde/oro se vince (>0.5)
-  scale_fill_gradient2(low = "#2c7bb6", mid = "#ffffbf", high = "#d7191c", 
+  scale_fill_gradient2(low = "#2c7bb6", mid = "#ffffbf", high = "#d7191c",
                        midpoint = 0.5, name = "Probabilità\nSotto > Destra") +
   theme_minimal() +
   labs(
@@ -590,7 +593,7 @@ df_heatmap <- df_heatmap %>%
 ggplot(df_heatmap, aes(x = Label_B, y = reorder(Label_A, Scenari_Battuti), fill = Prob_Vittoria)) +
   geom_tile(color = "white", size = 0.1) +
   # Scala divergente: viola/blu se perde (<0.5), bianca al pareggio (0.5), verde/oro se vince (>0.5)
-  scale_fill_gradient2(low = "#2c7bb6", mid = "#ffffbf", high = "#d7191c", 
+  scale_fill_gradient2(low = "#2c7bb6", mid = "#ffffbf", high = "#d7191c",
                        midpoint = 0.5, name = "Probabilità\nSotto > Destra") +
   theme_minimal() +
   labs(

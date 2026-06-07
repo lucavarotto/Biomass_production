@@ -10,8 +10,8 @@ PALETTE <- "plasma"
 DPI     <- 300
 
 # Cartella di destinazione dei grafici (percorso assoluto)
-OUT_DIR <- "C:/Users/Antonio/Desktop/UNI/MAGISTRALE/SECONDO ANNO/2_SEMESTRE/ITERAZIONE/progetto/BiomassProduction/Grafici/"
-# OUT_DIR <- "C:/Users/Utente/OneDrive/Universita/Magistrale/2025-2026/Iterazione/Progetto/Grafici"
+#OUT_DIR <- "C:/Users/Antonio/Desktop/UNI/MAGISTRALE/SECONDO ANNO/2_SEMESTRE/ITERAZIONE/progetto/BiomassProduction/Grafici/"
+ OUT_DIR <- "C:/Users/Utente/OneDrive/Universita/Magistrale/2025-2026/Iterazione/Progetto/Grafici"
 dati$tempo <- dati$tempo + 1
 
 # Tutte le curve --------------------------------------------------------------
@@ -49,7 +49,7 @@ p1 <- ggplot(dati, aes(x = tempo, y = OD,
 ggsave(
   file.path(OUT_DIR, "tutte_curve_condizione.png"),
   plot  = p1,
-  width = 6, height = 5, dpi = DPI
+  width = 7, height = 5, dpi = DPI
 )
 
 # Curve medie per condizione sperimentale (sfondo grigio + media colorata) ----
@@ -76,7 +76,7 @@ p2 <- ggplot(dati, aes(x = tempo, y = OD,
 ggsave(
   file.path(OUT_DIR, "Curve_medie_condizione.png"),
   plot  = p2,
-  width = 6, height = 5, dpi = DPI
+  width = 7, height = 5, dpi = DPI
 )
 
 
