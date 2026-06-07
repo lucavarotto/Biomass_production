@@ -44,12 +44,12 @@ p1 <- ggplot(dati, aes(x = tempo, y = OD,
     color = "Condizione Sperimentale"
   ) +
   theme_minimal() +
-  theme(legend.position = "right")
+  theme(legend.position = "none")
 
 ggsave(
   file.path(OUT_DIR, "tutte_curve_condizione.png"),
   plot  = p1,
-  width = 7, height = 5, dpi = DPI
+  width = 8, height = 5, dpi = DPI
 )
 
 # Curve medie per condizione sperimentale (sfondo grigio + media colorata) ----
@@ -210,7 +210,6 @@ p_na_zoom <- ggplot(
 
   scale_color_viridis_d(option = PALETTE, end = 0.9) +
   labs(
-    title = "Unità con dati mancanti",
     x     = "Tempo (settimane)",
     y     = "Optical Density (OD)",
     color = "Condizione sperimentale"
@@ -231,7 +230,6 @@ p_na_contesto <- ggplot(
     labels = c("Completa", "Con NA")
   ) +
   labs(
-    title = "Posizione nel dataset completo",
     x     = "Tempo (settimane)",
     y     = "Optical Density (OD)",
     color = "Unità"
@@ -242,7 +240,7 @@ p_na_contesto <- ggplot(
 ggsave(
   file.path(OUT_DIR, "dati_mancanti.png"),
   plot  = arrangeGrob(p_na_zoom, p_na_contesto, ncol = 2),
-  width = 12, height = 5, dpi = DPI
+  width = 14, height = 5, dpi = DPI
 )
 
 
