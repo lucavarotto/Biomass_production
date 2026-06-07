@@ -146,47 +146,69 @@ ggsave("Grafici/condizionate_combinate.pdf",
 # Grafici marginali -----------------------------------------------------------
 # Singole curve sullo sfondo (alpha basso) + media per livello in grassetto.
 
-marginale_I <- ggplot(dati, aes(x = tempo, y = OD,
-                                color = as.factor(I), fill = as.factor(I))) +
-  geom_line(aes(group = id_biomassa), alpha = 0.3, na.rm = TRUE) +
-  geom_point(aes(group = id_biomassa), alpha = 0.3, size = 0.8, na.rm = TRUE) +
-  stat_summary(fun.data = mean_se, geom = "ribbon", alpha = 0.2, color = NA, na.rm = TRUE) +
-  stat_summary(fun = mean, geom = "line",  linewidth = 1.2, na.rm = TRUE) +
-  stat_summary(fun = mean, geom = "point", size = 2,        na.rm = TRUE) +
-  scale_color_viridis_d(option = PALETTE, end = 0.9) +
-  scale_fill_viridis_d(option = PALETTE,  end = 0.9) +
-  labs(x = "Tempo (settimane)", y = "Optical Density (OD)",
-       color = "Fattore I", fill = "Fattore I") +
-  theme_minimal()
+# marginale_I <- ggplot(dati, aes(x = tempo, y = OD,
+#                                 color = as.factor(I), fill = as.factor(I))) +
+#   geom_line(aes(group = id_biomassa), alpha = 0.3, na.rm = TRUE) +
+#   geom_point(aes(group = id_biomassa), alpha = 0.3, size = 0.8, na.rm = TRUE) +
+#   stat_summary(fun.data = mean_se, geom = "ribbon", alpha = 0.2, color = NA, na.rm = TRUE) +
+#   stat_summary(fun = mean, geom = "line",  linewidth = 1.2, na.rm = TRUE) +
+#   stat_summary(fun = mean, geom = "point", size = 2,        na.rm = TRUE) +
+#   scale_color_viridis_d(option = PALETTE, end = 0.9) +
+#   scale_fill_viridis_d(option = PALETTE,  end = 0.9) +
+#   labs(x = "Tempo (settimane)", y = "Optical Density (OD)",
+#        color = "Fattore I", fill = "Fattore I") +
+#   theme_minimal()
+# 
+# marginale_D <- ggplot(dati, aes(x = tempo, y = OD,
+#                                 color = as.factor(D), fill = as.factor(D))) +
+#   geom_line(aes(group = id_biomassa), alpha = 0.3, na.rm = TRUE) +
+#   geom_point(aes(group = id_biomassa), alpha = 0.3, size = 0.8, na.rm = TRUE) +
+#   stat_summary(fun.data = mean_se, geom = "ribbon", alpha = 0.2, color = NA, na.rm = TRUE) +
+#   stat_summary(fun = mean, geom = "line",  linewidth = 1.2, na.rm = TRUE) +
+#   stat_summary(fun = mean, geom = "point", size = 2,        na.rm = TRUE) +
+#   scale_color_viridis_d(option = PALETTE, end = 0.9) +
+#   scale_fill_viridis_d(option = PALETTE,  end = 0.9) +
+#   labs(x = "Tempo (settimane)", y = "Optical Density (OD)",
+#        color = "Fattore D", fill = "Fattore D") +
+#   theme_minimal()
+# 
+# marginale_P <- ggplot(dati, aes(x = tempo, y = OD,
+#                                 color = as.factor(P), fill = as.factor(P))) +
+#   geom_line(aes(group = id_biomassa), alpha = 0.3, na.rm = TRUE) +
+#   geom_point(aes(group = id_biomassa), alpha = 0.3, size = 0.8, na.rm = TRUE) +
+#   stat_summary(fun.data = mean_se, geom = "ribbon", alpha = 0.2, color = NA, na.rm = TRUE) +
+#   stat_summary(fun = mean, geom = "line",  linewidth = 1.2, na.rm = TRUE) +
+#   stat_summary(fun = mean, geom = "point", size = 2,        na.rm = TRUE) +
+#   scale_color_viridis_d(option = PALETTE, end = 0.9) +
+#   scale_fill_viridis_d(option = PALETTE,  end = 0.9) +
+#   labs(x = "Tempo (settimane)", y = "Optical Density (OD)",
+#        color = "Fattore P", fill = "Fattore P") +
+#   theme_minimal()
 
-marginale_D <- ggplot(dati, aes(x = tempo, y = OD,
-                                color = as.factor(D), fill = as.factor(D))) +
-  geom_line(aes(group = id_biomassa), alpha = 0.3, na.rm = TRUE) +
-  geom_point(aes(group = id_biomassa), alpha = 0.3, size = 0.8, na.rm = TRUE) +
-  stat_summary(fun.data = mean_se, geom = "ribbon", alpha = 0.2, color = NA, na.rm = TRUE) +
-  stat_summary(fun = mean, geom = "line",  linewidth = 1.2, na.rm = TRUE) +
-  stat_summary(fun = mean, geom = "point", size = 2,        na.rm = TRUE) +
-  scale_color_viridis_d(option = PALETTE, end = 0.9) +
-  scale_fill_viridis_d(option = PALETTE,  end = 0.9) +
-  labs(x = "Tempo (settimane)", y = "Optical Density (OD)",
-       color = "Fattore D", fill = "Fattore D") +
-  theme_minimal()
 
-marginale_P <- ggplot(dati, aes(x = tempo, y = OD,
-                                color = as.factor(P), fill = as.factor(P))) +
-  geom_line(aes(group = id_biomassa), alpha = 0.3, na.rm = TRUE) +
-  geom_point(aes(group = id_biomassa), alpha = 0.3, size = 0.8, na.rm = TRUE) +
-  stat_summary(fun.data = mean_se, geom = "ribbon", alpha = 0.2, color = NA, na.rm = TRUE) +
-  stat_summary(fun = mean, geom = "line",  linewidth = 1.2, na.rm = TRUE) +
-  stat_summary(fun = mean, geom = "point", size = 2,        na.rm = TRUE) +
-  scale_color_viridis_d(option = PALETTE, end = 0.9) +
-  scale_fill_viridis_d(option = PALETTE,  end = 0.9) +
-  labs(x = "Tempo (settimane)", y = "Optical Density (OD)",
-       color = "Fattore P", fill = "Fattore P") +
-  theme_minimal()
+marginal_plot <- function(fattore, label, colori) {
+  ggplot(dati, aes(x = tempo, y = OD,
+                   color = as.factor(.data[[fattore]]),
+                   fill  = as.factor(.data[[fattore]]))) +
+    geom_line(aes(group = id_biomassa), color = "gray75", alpha = 0.6, na.rm = TRUE) +
+    geom_point(aes(group = id_biomassa), color = "gray75", alpha = 0.6, size = 0.8, na.rm = TRUE) +
+    stat_summary(fun.data = mean_se, geom = "ribbon", alpha = 0.25, color = NA, na.rm = TRUE) +
+    stat_summary(fun = mean, geom = "line",  linewidth = 1.2, na.rm = TRUE) +
+    stat_summary(fun = mean, geom = "point", size = 2,        na.rm = TRUE) +
+    scale_color_manual(values = colori) +
+    scale_fill_manual(values  = colori) +
+    labs(x = "Tempo (settimane)", y = "Optical Density (OD)",
+         color = label, fill = label) +
+    theme_minimal()
+}
+
+marginale_I <- marginal_plot("I", "I",  COL_I)
+marginale_D <- marginal_plot("D", "D",  COL_D)
+marginale_P <- marginal_plot("P", "P", COL_P)
+
 
 ggsave(
-  file.path(OUT_DIR, "marginali.png"),
+  file.path(OUT_DIR, "Grafici/marginali.png"),
   plot  = arrangeGrob(marginale_I, marginale_D, marginale_P, ncol = 3),
   width = 18, height = 5, dpi = DPI
 )
