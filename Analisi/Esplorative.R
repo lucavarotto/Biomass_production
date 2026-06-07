@@ -85,7 +85,7 @@ grafico_condizionate <- function(condizionante, f1, f2 = NULL) {
     dati$gruppo_colore <- as.factor(dati[[f1]])
     label_colore <- f1
   }
-  
+
   ggplot(dati, aes(x = tempo, y = OD,
                    color = gruppo_colore,
                    fill  = gruppo_colore)) +
@@ -99,26 +99,43 @@ grafico_condizionate <- function(condizionante, f1, f2 = NULL) {
     scale_color_viridis_d(option = PALETTE, end = 0.9) +
     scale_fill_viridis_d(option = PALETTE,  end = 0.9) +
     labs(
-      title = paste("Dinamica di crescita condizionata a", condizionante),
       x     = "Tempo (settimane)",
-      y     = "Optical Density (OD)",
+      y     = "OD",
       color = label_colore,
       fill  = label_colore
     ) +
     theme_minimal()
 }
 
+p1 <- grafico_condizionate("I", "D")
+p2 <- grafico_condizionate("P", "D")
+p3 <- grafico_condizionate("I", "P")
+
 ggsave(file.path(OUT_DIR, "condizionata_D_I.png"),
-       plot = grafico_condizionate("I", "D"),
-       width = 9, height = 5, dpi = DPI)
+       plot = p1,
+       width = 9, height = 4, dpi = DPI)
 
 ggsave(file.path(OUT_DIR, "condizionata_D_P.png"),
-       plot = grafico_condizionate("P", "D"),
-       width = 9, height = 5, dpi = DPI)
+       plot = p2,
+       width = 9, height = 4, dpi = DPI)
 
 ggsave(file.path(OUT_DIR, "condizionata_P_I.png"),
-       plot = grafico_condizionate("I", "P"),
-       width = 9, height = 5, dpi = DPI)
+       plot = p3,
+       width = 9, height = 4, dpi = DPI)
+
+library(patchwork)
+# Unisci i grafici in un'unica colonna
+plot_combinato <- p1 / p2 / p3 +
+  plot_annotation(
+  ) &
+  theme(plot.margin = margin(10, 10, 10, 10))
+
+# Esporta impostando le dimensioni esatte della pagina (es. A4, tenendo conto dei margini)
+ggsave("Grafici/condizionate_combinate.pdf",
+       plot = plot_combinato,
+       width = 9,
+       height = 12, # Dimensioni A4, modificale in base a quanto spazio vuoi occupare
+       units = "in")
 
 
 # Grafici marginali -----------------------------------------------------------
@@ -185,7 +202,7 @@ p_na_zoom <- ggplot(
 ) +
   geom_line(alpha = 0.7, na.rm = TRUE) +
   geom_point(alpha = 0.5, na.rm = TRUE) +
-  
+
   scale_color_viridis_d(option = PALETTE, end = 0.9) +
   labs(
     title = "Unità con dati mancanti",
@@ -252,7 +269,7 @@ rapp <- ggplot(dati_incrementi_rapporti,
   stat_summary(fun.data = mean_se, geom = "ribbon", alpha = 0.2, color = NA, na.rm = TRUE) +
   stat_summary(fun = mean, geom = "line", linewidth = 1.2, na.rm = TRUE) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "red", linewidth = 0.8) +
-  
+
   scale_color_viridis_d(option = PALETTE) +
   scale_fill_viridis_d(option = PALETTE) +
   labs(
@@ -326,22 +343,22 @@ cbind(df_summary[,2]*coef(fit)[1] + (df_summary[,2]^2)*coef(fit)[2],
 
 ggplot(df_summary, aes(x = media_OD, y = varianza_OD)) +
   geom_point(size = 3, color = "#0d0887", alpha = 0.7) + # Blu scuro plasma
-  
+
   # 1. Spline Cubica (Giallo plasma)
   geom_smooth(
-    method = "lm", 
-    formula = y ~ splines::bs(x, df = 3), 
-    color = "#f0f921", 
-    se = FALSE, 
+    method = "lm",
+    formula = y ~ splines::bs(x, df = 3),
+    color = "#f0f921",
+    se = FALSE,
     linewidth = 1.2
   ) +
-  
+
   # 2. Modello Mu + Beta*Mu^2 (Arancione plasma)
   geom_smooth(
-    method = "lm", 
-    formula = y ~ x + I(x^2) -1, 
-    color = "#f89540", 
-    se = FALSE, 
+    method = "lm",
+    formula = y ~ x + I(x^2) -1,
+    color = "#f89540",
+    se = FALSE,
     linewidth = 1.2,
     linetype = "dashed" # Distingue visivamente i due modelli
   ) +
