@@ -1,3 +1,4 @@
+```text
 ├── .gitignore                  # File per l'esclusione di file temporanei e pesanti da Git
 ├── Progetto.Rproj             # File di progetto RStudio
 ├── Relazione.pdf              # Relazione finale del progetto
@@ -10,3 +11,4 @@
 ├── Grafici/                   # Raccolta dei plot generati (esplorativa, diagnostica e predittivi)
 ├── Note/                      # Appunti, bozze testuali e verbali di gruppo
 └── Paper/                     # Letteratura scientifica e paper di riferimento (es. Montgomery)
+```
