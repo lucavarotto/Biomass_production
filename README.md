@@ -7,8 +7,12 @@
 ├── Analisi/                   # Nucleo operativo dell'analisi statistica e modellazione
 │   ├── Stan/                  # File di configurazione e modelli scritti in linguaggio Stan
 │   ├── nostoc.xlsx            # Dataset originale con le misurazioni longitudinali
+│   └── ...                    # Altri script
 │
-├── Grafici/                   # Raccolta dei plot generati (esplorativa, diagnostica e predittivi)
-├── Note/                      # Appunti, bozze testuali e verbali di gruppo
-└── Paper/                     # Letteratura scientifica e paper di riferimento (es. Montgomery)
+├── Grafici/                   
+│   └── ...                    # Raccolta dei plot generati (esplorativa, diagnostica e predittivi)
+├── Note/                      
+│   └── ...                    # Appunti, bozze testuali e verbali di gruppo
+└── Paper/                     
+│   └── ...                    # Letteratura scientifica e paper di riferimento (es. Montgomery)
 ```
