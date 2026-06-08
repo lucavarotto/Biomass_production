@@ -1,5 +1,5 @@
 ```text
-├── .gitignore                  # File per l'esclusione di file temporanei e pesanti da Git
+├── .gitignore                 # File per l'esclusione di file temporanei e pesanti da Git
 ├── Progetto.Rproj             # File di progetto RStudio
 ├── Relazione.pdf              # Relazione finale del progetto
 ├── nostoc.pdf                 # Traccia, linee guida e specifiche del framework sperimentale
