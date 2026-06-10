@@ -1,4 +1,13 @@
-.Rproj.user
+# Specifico di RStudio (Directory locali con stati della sessione)
+.Rproj.user/
+.Rproj
+
+# Cronologia e dati di sessione (Mai caricare questi file!)
 .Rhistory
 .RData
+.RDataTmp
 .Ruser
+
+# File di configurazione utente condivisibili (Opzionale, ma consigliato)
+# Se non vuoi condividere le tue preferenze personali di RStudio:
+.Rprofile
