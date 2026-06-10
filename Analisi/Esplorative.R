@@ -158,7 +158,7 @@ ggsave("Grafici/condizionate_combinate.pdf",
 #   labs(x = "Tempo (settimane)", y = "Optical Density (OD)",
 #        color = "Fattore I", fill = "Fattore I") +
 #   theme_minimal()
-# 
+#
 # marginale_D <- ggplot(dati, aes(x = tempo, y = OD,
 #                                 color = as.factor(D), fill = as.factor(D))) +
 #   geom_line(aes(group = id_biomassa), alpha = 0.3, na.rm = TRUE) +
@@ -171,7 +171,7 @@ ggsave("Grafici/condizionate_combinate.pdf",
 #   labs(x = "Tempo (settimane)", y = "Optical Density (OD)",
 #        color = "Fattore D", fill = "Fattore D") +
 #   theme_minimal()
-# 
+#
 # marginale_P <- ggplot(dati, aes(x = tempo, y = OD,
 #                                 color = as.factor(P), fill = as.factor(P))) +
 #   geom_line(aes(group = id_biomassa), alpha = 0.3, na.rm = TRUE) +
