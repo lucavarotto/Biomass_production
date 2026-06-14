@@ -1,5 +1,7 @@
 rm(list=ls());
 
+setwd("C:/Users/Utente/OneDrive/Universita/Magistrale/2025-2026/Iterazione/Progetto/Analisi")
+
 SCRIPT_DIR  <- dirname(rstudioapi::getActiveDocumentContext()$path)
 GRAFICI_DIR <- file.path(SCRIPT_DIR, "grafici")
 dir.create(GRAFICI_DIR, showWarnings = FALSE, recursive = TRUE)
@@ -32,7 +34,7 @@ color_scheme_set("blue")
 # Sezione 1 — Preparazione dati
 # ==============================================================================
 
-load(file.path(SCRIPT_DIR, "dati_modificati.Rdata"))
+load("dati_modificati.Rdata")
 
 dati <- dati |>
   mutate(
@@ -73,7 +75,7 @@ cat("Dati: N =", stan_data$N, "| K =", stan_data$K, "| P =", stan_data$P, "\n")
 # Sezione 2 — Stima
 # ==============================================================================
 
-mod <- cmdstan_model(file.path(SCRIPT_DIR, "modello.stan"))
+mod <- cmdstan_model(file.path(SCRIPT_DIR, "modello_finale.stan"))
 
 fit <- mod$sample(
   data            = stan_data,
