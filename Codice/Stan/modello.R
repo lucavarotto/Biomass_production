@@ -1,9 +1,7 @@
 rm(list=ls());
 
-setwd("C:/Users/Utente/OneDrive/Universita/Magistrale/2025-2026/Iterazione/Progetto/Analisi")
-
 SCRIPT_DIR  <- dirname(rstudioapi::getActiveDocumentContext()$path)
-GRAFICI_DIR <- file.path(SCRIPT_DIR, "grafici")
+GRAFICI_DIR <- file.path(dirname(dirname(SCRIPT_DIR)), "Figures")
 dir.create(GRAFICI_DIR, showWarnings = FALSE, recursive = TRUE)
 
 # ==============================================================================
@@ -34,7 +32,7 @@ color_scheme_set("blue")
 # Sezione 1 — Preparazione dati
 # ==============================================================================
 
-load("dati_modificati.Rdata")
+load(file.path(dirname(SCRIPT_DIR), "dati_modificati.Rdata"))
 
 dati <- dati |>
   mutate(

@@ -11,3 +11,35 @@
 # File di configurazione utente condivisibili (Opzionale, ma consigliato)
 # Se non vuoi condividere le tue preferenze personali di RStudio:
 .Rprofile
+
+# Dati sperimentali e oggetti derivati: restano nella cartella locale
+Codice/nostoc.xlsx
+Codice/dati_modificati.Rdata
+
+# Catene MCMC e modelli stimati: pesanti e rigenerabili da Codice/Stan/modello.R
+Codice/Stan/fits/
+Codice/Stan/stan_output*/
+*.rds
+
+# Paper di riferimento di terzi: si citano, non si ridistribuiscono
+Paper/
+
+# Del report resta solo il PDF: i sorgenti LaTeX no
+*.tex
+*.bib
+
+# Output di compilazione LaTeX (la relazione si ricompila da Report/Relazione.tex)
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fls
+*.fdb_latexmk
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+
+# Catene salvate dagli script di prova
+Codice/Stan/fit_mcmc_*.Rdata

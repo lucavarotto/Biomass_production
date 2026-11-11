@@ -17,7 +17,10 @@ library(dplyr)
 # -------------------------------------------------------------
 
 rm(list=ls());
-setwd("C:/Users/Utente/OneDrive/Universita/Magistrale/2025-2026/Iterazione/Progetto/Analisi")
+# La cartella di lavoro e' Codice/, ricavata dalla posizione di questo
+# script invece che da un percorso fisso della macchina.
+setwd(normalizePath(file.path(
+  dirname(rstudioapi::getActiveDocumentContext()$path), "..", "..")))
 load("dati_modificati.Rdata")
 rm(dati_incrementi, dati_incrementi_rapporti);gc();
 
@@ -76,7 +79,7 @@ stan_data <- list(
 set_cmdstan_path()
 
 modello_semplice <- function(){
-  mod <- cmdstan_model("Stan/model_base.stan")
+  mod <- cmdstan_model("Stan/Prove/1_base_ar1.stan")
   
   dir <- "Stan/stan_output_base"
   dir.create(dir, showWarnings = FALSE)
@@ -98,7 +101,7 @@ modello_semplice <- function(){
 }
 
 modello_avanzato <- function(){
-  mod <- cmdstan_model("Stan/model_advanced.stan")
+  mod <- cmdstan_model("Stan/Prove/2_re_su_tutti_i_parametri.stan")
   
   dir <- "Stan/stan_output_advanced"
   dir.create(dir, showWarnings = FALSE)
@@ -119,7 +122,7 @@ modello_avanzato <- function(){
 }
 
 modello_eteroschedastico <- function(){
-  mod <- cmdstan_model("Stan/model_heterosc_exp.stan")
+  mod <- cmdstan_model("Stan/Prove/3_eteroschedastico.stan")
   
   dir <- "Stan/stan_output_heterosc"
   dir.create(dir, showWarnings = FALSE)
@@ -140,7 +143,7 @@ modello_eteroschedastico <- function(){
 }
 
 modello_hs <- function(){
-  mod <- cmdstan_model("Stan/model_hs.stan")
+  mod <- cmdstan_model("Stan/Prove/4_horseshoe.stan")
   
   p0 <- 8 # Numero atteso di covariate rilevanti (es. I, D, P)
   D_vars <- 21 # Numero totale di covariate
@@ -170,7 +173,7 @@ modello_hs <- function(){
 }
 
 modello_het_quad_RE <- function(){
-  mod <- cmdstan_model("Stan/model_het_quad_RE.stan")
+  mod <- cmdstan_model("Stan/Prove/5_eteroschedastico_quadratico.stan")
   
   dir <- "Stan/stan_output_het_quad_RE"
   dir.create(dir, showWarnings = FALSE)

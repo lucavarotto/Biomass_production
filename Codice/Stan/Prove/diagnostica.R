@@ -6,7 +6,10 @@ library(dplyr)
 library(ggridges)
 library(cmdstanr)
 
-setwd("C:/Users/Utente/OneDrive/Universita/Magistrale/2025-2026/Iterazione/Progetto/Analisi")
+# La cartella di lavoro e' Codice/, ricavata dalla posizione di questo
+# script invece che da un percorso fisso della macchina.
+setwd(normalizePath(file.path(
+  dirname(rstudioapi::getActiveDocumentContext()$path), "..", "..")))
 
 load("dati_modificati.Rdata")
 load("Stan/fit_mcmc_base.Rdata")

@@ -20,7 +20,7 @@ library(ggplot2)
 library(patchwork)
 
 SCRIPT_DIR  <- dirname(rstudioapi::getActiveDocumentContext()$path)
-GRAFICI_DIR <- file.path(SCRIPT_DIR, "grafici")
+GRAFICI_DIR <- file.path(dirname(dirname(SCRIPT_DIR)), "Figures")
 dir.create(GRAFICI_DIR, showWarnings = FALSE, recursive = TRUE)
 
 
